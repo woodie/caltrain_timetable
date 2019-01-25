@@ -9,5 +9,5 @@ Source: http://www.caltrain.com/timetable.html
 
 * Legend:
 * @ Six minute timed transfer at Redwood City station
-* * Train may leave up to 5 minutes early.
+* \* Train may leave up to 5 minutes early.
 * Powered by TimeTableME, (c) Simon Ru 2006
