@@ -23,7 +23,7 @@ with open('CT-GTFS/stop_times.txt', 'rb') as timesFile:
   timesReader = csv.reader(timesFile)
   timeHeaders = next(timesReader, None)
   for row in timesReader:
-    if (len(row[3]) > 4):
+    if (len(row[0]) > 4):
       continue
     trip_id = int(row[0])
     stop_id = int(row[3])
