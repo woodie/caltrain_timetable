@@ -51,10 +51,9 @@ with open('CT-GTFS/stop_times.txt', 'rb') as timesFile:
     stop_id = int(row[3])
     hour = int(row[2][0:-6])
     minute = row[2][-5:-3]
-    if (hour > 12):
-      departure = "%s:%s PM" % (hour - 12, minute)
-    else:
-      departure = "%s:%s AM" % (hour, minute)
+    ampm = 'PM' if (hour > 11 and hour < 24) else 'AM'
+    hr = hour - 12 if (hour > 12) else hour
+    departure = "%s:%s %s" % (hr, minute, ampm)
     if (stop_id % 2 == 1):
       if (trip_id < 400):
         if (trip_id not in nb_weekday):
