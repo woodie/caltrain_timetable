@@ -1,23 +1,43 @@
 #!/usr/bin/env python
 
 import csv
+import re
+import os
+import subprocess
 
 xstr = lambda s: s or ''
 
-datafiles = ['CalTrain@North M-F.txt', 'CalTrain@North S-Su.txt',
-             'CalTrain@South M-F.txt', 'CalTrain@South S-Su.txt']
+source = 'http://www.caltrain.com/Assets/GTFS/caltrain/CT-GTFS.zip'
 nb_stations = []; nb_weekday = {}; nb_weekend = {}
 sb_stations = []; sb_weekday = {}; sb_weekend = {}
+nb_weekday_order = []; nb_weekend_order = []
+sb_weekday_order = []; sb_weekend_order = []
+extraneous = ['Diridon', 'Caltrain', 'Station']
 
+# Fetch Caltrain data
+basedir = os.getcwd()
+subprocess.call(['mkdir', '-p', 'downloads'])
+os.chdir('downloads')
+subprocess.call(['rm', 'CT-GTFS.zip'])
+subprocess.call(['curl', '-O', source])
+os.chdir(basedir)
+subprocess.call(['mkdir', '-p', 'CT-GTFS'])
+os.chdir('CT-GTFS')
+subprocess.call(['unzip', '-o', '../downloads/CT-GTFS.zip'])
+os.chdir(basedir)
+
+# Generate app data files
 labels = {}
 with open('CT-GTFS/stops.txt', 'rb') as stopsFile:
   stopsReader = csv.reader(stopsFile)
   stopHeaders = next(stopsReader, None)
   for row in stopsReader:
     stop_id = int(row[1])
-    labels[stop_id] = row[2].replace(' Caltrain', '').replace(' Station', '')
+    for words in extraneous:
+      row[2] = row[2].replace(words, '')
+    labels[stop_id] = re.sub('\s+', ' ', row[2]).strip()
     if (stop_id % 2 == 1):
-      nb_stations.append(stop_id)
+      nb_stations.insert(0, stop_id)
     else:
       sb_stations.append(stop_id)
 
@@ -39,60 +59,63 @@ with open('CT-GTFS/stop_times.txt', 'rb') as timesFile:
       if (trip_id < 400):
         if (trip_id not in nb_weekday):
           nb_weekday[trip_id] = [None] * len(nb_stations)
-
+          nb_weekday_order.append(trip_id)
         nb_weekday[trip_id][nb_stations.index(stop_id)] = departure
       else:
         if (trip_id not in nb_weekend):
           nb_weekend[trip_id] = [None] * len(nb_stations)
+          nb_weekend_order.append(trip_id)
         nb_weekend[trip_id][nb_stations.index(stop_id)] = departure
     else:
       if (trip_id < 400):
         if (trip_id not in sb_weekday):
           sb_weekday[trip_id] = [None] * len(sb_stations)
+          sb_weekday_order.append(trip_id)
         sb_weekday[trip_id][sb_stations.index(stop_id)] = departure
       else:
         if (trip_id not in sb_weekend):
           sb_weekend[trip_id] = [None] * len(sb_stations)
+          sb_weekend_order.append(trip_id)
         sb_weekend[trip_id][sb_stations.index(stop_id)] = departure
 
-# Need to invert order of some and possibly use special char for spaces
-
-with open('res/_CalTrain@North M-F.txt', 'w') as f:
+with open('res/CalTrain@North M-F.txt', 'w') as f:
   header = ['Train No.']
   for stop_id in nb_stations:
     header.append(labels[stop_id])
   f.write('\t'.join(header))
   f.write('\n')
-  for stop_id in nb_weekday:
-    f.write('\t'.join(map(xstr,[str(stop_id)] + nb_weekday[stop_id])))
+  for trip_id in nb_weekday_order:
+    f.write('\t'.join(map(xstr,[str(trip_id)] + nb_weekday[trip_id])))
     f.write('\n')
 
-with open('res/_CalTrain@North S-Su.txt', 'w') as f:
+with open('res/CalTrain@North S-Su.txt', 'w') as f:
   header = ['Train No.']
   for stop_id in nb_stations:
     header.append(labels[stop_id])
   f.write('\t'.join(header))
   f.write('\n')
-  for stop_id in nb_weekend:
-    f.write('\t'.join(map(xstr,[str(stop_id)] + nb_weekend[stop_id])))
+  for trip_id in nb_weekend_order:
+    f.write('\t'.join(map(xstr,[str(trip_id)] + nb_weekend[trip_id])))
     f.write('\n')
 
-with open('res/_CalTrain@South M-F.txt', 'w') as f:
+with open('res/CalTrain@South M-F.txt', 'w') as f:
   header = ['Train No.']
   for stop_id in sb_stations:
     header.append(labels[stop_id])
   f.write('\t'.join(header))
   f.write('\n')
-  for stop_id in sb_weekday:
-    f.write('\t'.join(map(xstr,[str(stop_id)] + sb_weekday[stop_id])))
+  for trip_id in sb_weekday_order:
+    f.write('\t'.join(map(xstr,[str(trip_id)] + sb_weekday[trip_id])))
     f.write('\n')
 
-with open('res/_CalTrain@South S-Su.txt', 'w') as f:
+with open('res/CalTrain@South S-Su.txt', 'w') as f:
   header = ['Train No.']
   for stop_id in sb_stations:
     header.append(labels[stop_id])
   f.write('\t'.join(header))
   f.write('\n')
-  for stop_id in sb_weekend:
-    f.write('\t'.join(map(xstr,[str(stop_id)] + sb_weekend[stop_id])))
+  for trip_id in sb_weekend_order:
+    if (trip_id not in sb_weekend):
+      continue
+    f.write('\t'.join(map(xstr,[str(trip_id)] + sb_weekend[trip_id])))
     f.write('\n')

@@ -8,10 +8,10 @@ MicroEdition-Profile: MIDP-2.0
 CONTACT_EMAIL: jflashcard@gmail.com
 TITLE: CalTrain Schedule
 DISPLAY_1stCOLUMN: YES
-HELP_TEXT: Caltrain timetable effective January 1, 2006 (Source: http://www.caltrain.com/timetable.html) Legend: @=Six minute timed transfer at Redwood City station; *=Train may leave up to 5 minutes early.
+HELP_TEXT: Caltrain timetable may not be current.
 SCHEDULE1: CalTrain@North M-F
 SCHEDULE2: CalTrain@South M-F
 SCHEDULE3: CalTrain@North S-Su
 SCHEDULE4: CalTrain@South S-Su
-MIDlet-Jar-Size: 16494
+MIDlet-Jar-Size: 23922
 MIDlet-Icon: icon40x40.png
