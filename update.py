@@ -8,18 +8,14 @@ from collections import OrderedDict
 
 xstr = lambda s: s or ''
 
-weekday = {'nb':OrderedDict(), 'sb':OrderedDict()}
-weekend = {'nb':OrderedDict(), 'sb':OrderedDict()}
-stations = {'nb':[], 'sb':[], 'labels':{}}
-
 def main():
   fetch_schedule_data()
-  parse_station_data()
-  parse_schedule_data()
-  write_schedule_file('North M-F', weekday['nb'], stations['nb'])
-  write_schedule_file('South M-F', weekday['sb'], stations['sb'])
-  write_schedule_file('North S-Su', weekend['nb'], stations['nb'])
-  write_schedule_file('South S-Su', weekend['sb'], stations['sb'])
+  stations = parse_station_data()
+  trips = parse_schedule_data(stations)
+  write_schedule_file('North M-F',  'nb', trips['weekday'], stations)
+  write_schedule_file('South M-F',  'sb', trips['weekday'], stations)
+  write_schedule_file('North S-Su', 'nb', trips['weekend'], stations)
+  write_schedule_file('South S-Su', 'sb', trips['weekend'], stations)
 
 def fetch_schedule_data():
   source = 'http://www.caltrain.com/Assets/GTFS/caltrain/CT-GTFS.zip'
@@ -35,6 +31,7 @@ def fetch_schedule_data():
   os.chdir(basedir)
 
 def parse_station_data():
+  stations = {'nb':[], 'sb':[], 'labels':{}}
   extraneous = ['Diridon', 'Caltrain', 'Station']
   with open('CT-GTFS/stops.txt', 'rb') as stopsFile:
     stopsReader = csv.reader(stopsFile)
@@ -48,8 +45,11 @@ def parse_station_data():
         stations['nb'].insert(0, stop_id)
       else:
         stations['sb'].append(stop_id)
+  return stations
 
-def parse_schedule_data():
+def parse_schedule_data(stations):
+  weekday = {'nb':OrderedDict(), 'sb':OrderedDict()}
+  weekend = {'nb':OrderedDict(), 'sb':OrderedDict()}
   with open('CT-GTFS/stop_times.txt', 'rb') as timesFile:
     timesReader = csv.reader(timesFile)
     timeHeaders = next(timesReader, None)
@@ -81,16 +81,17 @@ def parse_schedule_data():
           if (trip_id not in weekend['sb']):
             weekend['sb'][trip_id] = [None] * len(stations['sb'])
           weekend['sb'][trip_id][stations['sb'].index(stop_id)] = departure
+  return {'weekday':weekday, 'weekend':weekend}
 
-def write_schedule_file(segment, trips, stations):
+def write_schedule_file(segment, direction, trips, stations):
   with open('res/CalTrain@%s.txt' % segment, 'w') as f:
     header = ['Train No.']
-    for stop_id in stations:
+    for stop_id in stations[direction]:
       header.append(stations['labels'][stop_id])
     f.write('\t'.join(header))
     f.write('\n')
-    for trip_id in trips:
-      f.write('\t'.join(map(xstr,[str(trip_id)] + trips[trip_id])))
+    for trip_id in trips[direction]:
+      f.write('\t'.join(map(xstr,[str(trip_id)] + trips[direction][trip_id])))
       f.write('\n')
 
 
