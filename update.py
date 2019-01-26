@@ -4,23 +4,25 @@ import csv
 import re
 import os
 import subprocess
+from collections import OrderedDict 
 
 xstr = lambda s: s or ''
 
-nb_stations = []; nb_weekday_trips = {}; nb_weekend_trips = {}
-sb_stations = []; sb_weekday_trips = {}; sb_weekend_trips = {}
-nb_weekday_order = []; nb_weekend_order = []
-sb_weekday_order = []; sb_weekend_order = []
-station_labels = {}
+nb_weekday = OrderedDict()
+nb_weekend = OrderedDict() 
+sb_weekday = OrderedDict()
+sb_weekend = OrderedDict()
+stations = {'nb':[], 'sb':[]}
+station_labels = {};
 
 def main():
   fetch_schedule_data()
   parse_station_data()
   parse_schedule_data()
-  write_schedule_file('North M-F',  nb_weekday_order, nb_weekday_trips, nb_stations)
-  write_schedule_file('North S-Su', nb_weekend_order, nb_weekend_trips, nb_stations)
-  write_schedule_file('South M-F',  sb_weekday_order, sb_weekday_trips, sb_stations)
-  write_schedule_file('South S-Su', sb_weekend_order, sb_weekend_trips, sb_stations)
+  write_schedule_file('North M-F', nb_weekday, stations['nb'])
+  write_schedule_file('South M-F', sb_weekday, stations['sb'])
+  write_schedule_file('North S-Su', nb_weekend, stations['nb'])
+  write_schedule_file('South S-Su', sb_weekend, stations['sb'])
 
 def fetch_schedule_data():
   source = 'http://www.caltrain.com/Assets/GTFS/caltrain/CT-GTFS.zip'
@@ -46,9 +48,9 @@ def parse_station_data():
         row[2] = row[2].replace(words, '')
       station_labels[stop_id] = re.sub('\s+', ' ', row[2]).strip()
       if (stop_id % 2 == 1):
-        nb_stations.insert(0, stop_id)
+        stations['nb'].insert(0, stop_id)
       else:
-        sb_stations.append(stop_id)
+        stations['sb'].append(stop_id)
 
 def parse_schedule_data():
   with open('CT-GTFS/stop_times.txt', 'rb') as timesFile:
@@ -66,35 +68,31 @@ def parse_schedule_data():
       departure = "%s:%s %s" % (hr, minute, ampm)
       if (stop_id % 2 == 1):
         if (trip_id < 400):
-          if (trip_id not in nb_weekday_trips):
-            nb_weekday_trips[trip_id] = [None] * len(nb_stations)
-            nb_weekday_order.append(trip_id)
-          nb_weekday_trips[trip_id][nb_stations.index(stop_id)] = departure
+          if (trip_id not in nb_weekday):
+            nb_weekday[trip_id] = [None] * len(stations['nb'])
+          nb_weekday[trip_id][stations['nb'].index(stop_id)] = departure
         else:
-          if (trip_id not in nb_weekend_trips):
-            nb_weekend_trips[trip_id] = [None] * len(nb_stations)
-            nb_weekend_order.append(trip_id)
-          nb_weekend_trips[trip_id][nb_stations.index(stop_id)] = departure
+          if (trip_id not in nb_weekend):
+            nb_weekend[trip_id] = [None] * len(stations['nb'])
+          nb_weekend[trip_id][stations['nb'].index(stop_id)] = departure
       else:
         if (trip_id < 400):
-          if (trip_id not in sb_weekday_trips):
-            sb_weekday_trips[trip_id] = [None] * len(sb_stations)
-            sb_weekday_order.append(trip_id)
-          sb_weekday_trips[trip_id][sb_stations.index(stop_id)] = departure
+          if (trip_id not in sb_weekday):
+            sb_weekday[trip_id] = [None] * len(stations['sb'])
+          sb_weekday[trip_id][stations['sb'].index(stop_id)] = departure
         else:
-          if (trip_id not in sb_weekend_trips):
-            sb_weekend_trips[trip_id] = [None] * len(sb_stations)
-            sb_weekend_order.append(trip_id)
-          sb_weekend_trips[trip_id][sb_stations.index(stop_id)] = departure
+          if (trip_id not in sb_weekend):
+            sb_weekend[trip_id] = [None] * len(stations['sb'])
+          sb_weekend[trip_id][stations['sb'].index(stop_id)] = departure
 
-def write_schedule_file(segment, order, trips, stations):
+def write_schedule_file(segment, trips, stations):
   with open('res/CalTrain@%s.txt' % segment, 'w') as f:
     header = ['Train No.']
     for stop_id in stations:
       header.append(station_labels[stop_id])
     f.write('\t'.join(header))
     f.write('\n')
-    for trip_id in order:
+    for trip_id in trips:
       f.write('\t'.join(map(xstr,[str(trip_id)] + trips[trip_id])))
       f.write('\n')
 
