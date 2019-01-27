@@ -31,15 +31,15 @@ def fetch_schedule_data():
 
 def parse_station_data():
   _stations = {'north':[], 'south':[], 'labels':{}}
-  _extra = ['Diridon', 'Caltrain', 'Station']
+  extra = ['Diridon', 'Caltrain', 'Station']
   with open('CT-GTFS/stops.txt', 'rb') as stopsFile:
     stopsReader = csv.reader(stopsFile)
-    _headers = next(stopsReader, None)
-    _stop_id_x = _headers.index('stop_id')
-    _stop_name_x = _headers.index('stop_name')
+    header = next(stopsReader, None)
+    stop_id_x = header.index('stop_id')
+    stop_name_x = header.index('stop_name')
     for row in stopsReader:
-      stop_id = int(row[_stop_id_x])
-      stop_name = ' '.join(i for i in row[_stop_name_x].split() if i not in _extra)
+      stop_id = int(row[stop_id_x])
+      stop_name = ' '.join(i for i in row[stop_name_x].split() if i not in extra)
       _stations['labels'][stop_id] = stop_name
       if (stop_id % 2 == 1):
         _stations['north'].insert(0, stop_id)
@@ -52,17 +52,17 @@ def parse_schedule_data(stations):
             'weekend':{'north':OrderedDict(), 'south':OrderedDict()}}
   with open('CT-GTFS/stop_times.txt', 'rb') as timesFile:
     timesReader = csv.reader(timesFile)
-    _headers = next(timesReader, None)
-    _trip_id_x = _headers.index('trip_id')
-    _stop_id_x = _headers.index('stop_id')
-    _departure_x = _headers.index('departure_time')
+    header = next(timesReader, None)
+    trip_id_x = header.index('trip_id')
+    stop_id_x = header.index('stop_id')
+    departure_x = header.index('departure_time')
     for row in timesReader:
-      if (len(row[_trip_id_x]) > 4):
+      if (len(row[trip_id_x]) > 4):
         continue # skip special trips
-      trip_id = int(row[_trip_id_x])
-      stop_id = int(row[_stop_id_x])
-      hour = int(row[_departure_x][0:-6])
-      minute = row[_departure_x][-5:-3]
+      trip_id = int(row[trip_id_x])
+      stop_id = int(row[stop_id_x])
+      hour = int(row[departure_x][0:-6])
+      minute = row[departure_x][-5:-3]
       ampm = 'PM' if (hour > 11 and hour < 24) else 'AM'
       hr = hour - 12 if (hour > 12) else hour
       departure = "%s:%s %s" % (hr, minute, ampm)
@@ -76,10 +76,10 @@ def parse_schedule_data(stations):
 def write_schedule_file(direction, schedule, trips, stations):
   days = 'M-F' if (schedule == 'north') else 'S-Su'
   with open('res/CalTrain@%s %s.txt' % (direction.capitalize(), days), 'w') as f:
-    _header = ['Train No.']
+    header = ['Train No.']
     for stop_id in stations[direction]:
-      _header.append(stations['labels'][stop_id])
-    f.write('\t'.join(_header))
+      header.append(stations['labels'][stop_id])
+    f.write('\t'.join(header))
     f.write('\n')
     for trip_id in trips[schedule][direction]:
       f.write('\t'.join(map(xstr,[str(trip_id)] + trips[schedule][direction][trip_id])))
