@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
 import csv
-import re
 import os
 import subprocess
 from collections import OrderedDict 
@@ -32,15 +31,16 @@ def fetch_schedule_data():
 
 def parse_station_data():
   _stations = {'north':[], 'south':[], 'labels':{}}
+  _extra = ['Diridon', 'Caltrain', 'Station']
   with open('CT-GTFS/stops.txt', 'rb') as stopsFile:
     stopsReader = csv.reader(stopsFile)
     _headers = next(stopsReader, None)
+    _stop_id_x = _headers.index('stop_id')
+    _stop_name_x = _headers.index('stop_name')
     for row in stopsReader:
-      stop_id = int(row[_headers.index('stop_id')])
-      stop_name = row[_headers.index('stop_name')]
-      for word in ['Diridon', 'Caltrain', 'Station']:
-        stop_name = stop_name.replace(word, '')
-      _stations['labels'][stop_id] = re.sub('\s+', ' ', stop_name).strip()
+      stop_id = int(row[_stop_id_x])
+      stop_name = ' '.join(i for i in row[_stop_name_x].split() if i not in _extra)
+      _stations['labels'][stop_id] = stop_name
       if (stop_id % 2 == 1):
         _stations['north'].insert(0, stop_id)
       else:
@@ -52,14 +52,17 @@ def parse_schedule_data(stations):
             'weekend':{'north':OrderedDict(), 'south':OrderedDict()}}
   with open('CT-GTFS/stop_times.txt', 'rb') as timesFile:
     timesReader = csv.reader(timesFile)
-    timeHeaders = next(timesReader, None)
+    _headers = next(timesReader, None)
+    _trip_id_x = _headers.index('trip_id')
+    _stop_id_x = _headers.index('stop_id')
+    _departure_x = _headers.index('departure_time')
     for row in timesReader:
-      if (len(row[0]) > 4):
+      if (len(row[_trip_id_x]) > 4):
         continue # skip special trips
-      trip_id = int(row[0])
-      stop_id = int(row[3])
-      hour = int(row[2][0:-6])
-      minute = row[2][-5:-3]
+      trip_id = int(row[_trip_id_x])
+      stop_id = int(row[_stop_id_x])
+      hour = int(row[_departure_x][0:-6])
+      minute = row[_departure_x][-5:-3]
       ampm = 'PM' if (hour > 11 and hour < 24) else 'AM'
       hr = hour - 12 if (hour > 12) else hour
       departure = "%s:%s %s" % (hr, minute, ampm)
