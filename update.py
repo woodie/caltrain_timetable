@@ -34,12 +34,13 @@ def parse_station_data():
   _stations = {'north':[], 'south':[], 'labels':{}}
   with open('CT-GTFS/stops.txt', 'rb') as stopsFile:
     stopsReader = csv.reader(stopsFile)
-    stopHeaders = next(stopsReader, None)
+    _headers = next(stopsReader, None)
     for row in stopsReader:
-      stop_id = int(row[1])
-      for words in ['Diridon', 'Caltrain', 'Station']:
-        row[2] = row[2].replace(words, '')
-      _stations['labels'][stop_id] = re.sub('\s+', ' ', row[2]).strip()
+      stop_id = int(row[_headers.index('stop_id')])
+      stop_name = row[_headers.index('stop_name')]
+      for word in ['Diridon', 'Caltrain', 'Station']:
+        stop_name = stop_name.replace(word, '')
+      _stations['labels'][stop_id] = re.sub('\s+', ' ', stop_name).strip()
       if (stop_id % 2 == 1):
         _stations['north'].insert(0, stop_id)
       else:
@@ -54,7 +55,7 @@ def parse_schedule_data(stations):
     timeHeaders = next(timesReader, None)
     for row in timesReader:
       if (len(row[0]) > 4):
-        continue
+        continue # skip special trips
       trip_id = int(row[0])
       stop_id = int(row[3])
       hour = int(row[2][0:-6])
@@ -72,10 +73,10 @@ def parse_schedule_data(stations):
 def write_schedule_file(direction, schedule, trips, stations):
   days = 'M-F' if (schedule == 'north') else 'S-Su'
   with open('res/CalTrain@%s %s.txt' % (direction.capitalize(), days), 'w') as f:
-    header = ['Train No.']
+    _header = ['Train No.']
     for stop_id in stations[direction]:
-      header.append(stations['labels'][stop_id])
-    f.write('\t'.join(header))
+      _header.append(stations['labels'][stop_id])
+    f.write('\t'.join(_header))
     f.write('\n')
     for trip_id in trips[schedule][direction]:
       f.write('\t'.join(map(xstr,[str(trip_id)] + trips[schedule][direction][trip_id])))
