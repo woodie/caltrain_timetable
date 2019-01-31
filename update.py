@@ -74,7 +74,7 @@ def parse_schedule_data(stations):
   return _trips
 
 def write_schedule_file(direction, schedule, trips, stations):
-  days = 'M-F' if (schedule == 'north') else 'S-Su'
+  days = 'M-F' if (schedule == 'weekday') else 'S-Su'
   with open('res/CalTrain@%s %s.txt' % (direction.capitalize(), days), 'w') as f:
     header = ['Train No.']
     for stop_id in stations[direction]:
