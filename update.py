@@ -39,6 +39,8 @@ def parse_station_data():
     stop_name_x = header.index('stop_name')
     for row in stopsReader:
       stop_id = int(row[stop_id_x])
+      if (stop_id > 70400):
+        continue # skip fake stations
       stop_name = ' '.join(i for i in row[stop_name_x].split() if i not in extra)
       _stations['labels'][stop_id] = stop_name
       if (stop_id % 2 == 1):

@@ -13,5 +13,5 @@ SCHEDULE1: CalTrain@North M-F
 SCHEDULE2: CalTrain@South M-F
 SCHEDULE3: CalTrain@North S-Su
 SCHEDULE4: CalTrain@South S-Su
-MIDlet-Jar-Size: 23916
+MIDlet-Jar-Size: 23408
 MIDlet-Icon: icon40x40.png
