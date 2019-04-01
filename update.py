@@ -8,13 +8,14 @@ from collections import OrderedDict
 xstr = lambda s: s or ''
 
 def main():
-  fetch_schedule_data()
+  #fetch_schedule_data()
+  trips = parse_trip_data()
   stations = parse_station_data()
-  trips = parse_schedule_data(stations)
-  write_schedule_file('north', 'weekday', trips, stations)
-  write_schedule_file('south', 'weekday', trips, stations)
-  write_schedule_file('north', 'weekend', trips, stations)
-  write_schedule_file('south', 'weekend', trips, stations)
+  times = parse_schedule_data(trips, stations)
+  write_schedule_file('north', 'weekday', times, stations)
+  write_schedule_file('south', 'weekday', times, stations)
+  write_schedule_file('north', 'weekend', times, stations)
+  write_schedule_file('south', 'weekend', times, stations)
 
 def fetch_schedule_data():
   source = 'http://www.caltrain.com/Assets/GTFS/caltrain/CT-GTFS.zip'
@@ -28,6 +29,19 @@ def fetch_schedule_data():
   os.chdir('CT-GTFS')
   subprocess.call(['unzip', '-o', '../downloads/CT-GTFS.zip'])
   os.chdir(basedir)
+
+def parse_trip_data():
+  _trips = {}
+  with open('CT-GTFS/trips.txt', 'rb') as tripsFile:
+    tripsReader = csv.reader(tripsFile)
+    header = next(tripsReader, None)
+    trip_id_x = header.index('trip_id')
+    trip_name_x = header.index('trip_short_name')
+    for row in tripsReader:
+      trip_id = row[trip_id_x]
+      trip_name = row[trip_name_x]
+      _trips[trip_id] = trip_name
+  return _trips
 
 def parse_station_data():
   _stations = {'north':[], 'south':[], 'labels':{}}
@@ -49,8 +63,8 @@ def parse_station_data():
         _stations['south'].append(stop_id)
   return _stations
 
-def parse_schedule_data(stations):
-  _trips = {'weekday':{'north':OrderedDict(), 'south':OrderedDict()},
+def parse_schedule_data(trips, stations):
+  _times = {'weekday':{'north':OrderedDict(), 'south':OrderedDict()},
             'weekend':{'north':OrderedDict(), 'south':OrderedDict()}}
   with open('CT-GTFS/stop_times.txt', 'rb') as timesFile:
     timesReader = csv.reader(timesFile)
@@ -58,10 +72,12 @@ def parse_schedule_data(stations):
     trip_id_x = header.index('trip_id')
     stop_id_x = header.index('stop_id')
     departure_x = header.index('departure_time')
-    for row in timesReader:
-      if (len(row[trip_id_x]) > 4):
-        continue # skip special trips
-      trip_id = int(row[trip_id_x])
+    sortedLines = sorted(timesReader, key=lambda row: row[departure_x])
+    for row in sortedLines:
+      trip_num = trips[row[trip_id_x]]
+      if (len(trip_num) > 4):
+        continue # skip special times HERE
+      trip_id = int(trip_num)
       stop_id = int(row[stop_id_x])
       hour = int(row[departure_x][0:-6])
       minute = row[departure_x][-5:-3]
@@ -70,12 +86,12 @@ def parse_schedule_data(stations):
       departure = "%s:%s %s" % (hr, minute, ampm)
       direction = 'north' if (stop_id % 2 == 1) else 'south'
       schedule = 'weekday' if (trip_id < 400) else 'weekend'
-      if (trip_id not in _trips[schedule][direction]):
-        _trips[schedule][direction][trip_id] = [None] * len(stations[direction])
-      _trips[schedule][direction][trip_id][stations[direction].index(stop_id)] = departure
-  return _trips
+      if (trip_id not in _times[schedule][direction]):
+        _times[schedule][direction][trip_id] = [None] * len(stations[direction])
+      _times[schedule][direction][trip_id][stations[direction].index(stop_id)] = departure
+  return _times
 
-def write_schedule_file(direction, schedule, trips, stations):
+def write_schedule_file(direction, schedule, times, stations):
   days = 'M-F' if (schedule == 'weekday') else 'S-Su'
   with open('res/CalTrain@%s %s.txt' % (direction.capitalize(), days), 'w') as f:
     header = ['Train No.']
@@ -83,8 +99,8 @@ def write_schedule_file(direction, schedule, trips, stations):
       header.append(stations['labels'][stop_id])
     f.write('\t'.join(header))
     f.write('\n')
-    for trip_id in trips[schedule][direction]:
-      f.write('\t'.join(map(xstr,[str(trip_id)] + trips[schedule][direction][trip_id])))
+    for trip_id in times[schedule][direction]:
+      f.write('\t'.join(map(xstr,[str(trip_id)] + times[schedule][direction][trip_id])))
       f.write('\n')
 
 
