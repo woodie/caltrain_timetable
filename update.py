@@ -8,7 +8,7 @@ from collections import OrderedDict
 xstr = lambda s: s or ''
 
 def main():
-  #fetch_schedule_data()
+  fetch_schedule_data()
   trips = parse_trip_data()
   stations = parse_station_data()
   times = parse_schedule_data(trips, stations)
@@ -18,12 +18,13 @@ def main():
   write_schedule_file('south', 'weekend', times, stations)
 
 def fetch_schedule_data():
-  source = 'http://www.caltrain.com/Assets/GTFS/caltrain/CT-GTFS.zip'
+  #source = 'http://www.caltrain.com/Assets/GTFS/caltrain/CT-GTFS.zip'
+  source = 'http://www.caltrain.com/Assets/GTFS/caltrain/TimeTable/April2019_GTFS.zip'
   basedir = os.getcwd()
   subprocess.call(['mkdir', '-p', 'downloads'])
   os.chdir('downloads')
   subprocess.call(['rm', 'CT-GTFS.zip'])
-  subprocess.call(['curl', '-O', source])
+  subprocess.call(['curl', '-o', 'CT-GTFS.zip', source])
   os.chdir(basedir)
   subprocess.call(['mkdir', '-p', 'CT-GTFS'])
   os.chdir('CT-GTFS')
@@ -72,7 +73,7 @@ def parse_schedule_data(trips, stations):
     trip_id_x = header.index('trip_id')
     stop_id_x = header.index('stop_id')
     departure_x = header.index('departure_time')
-    sortedLines = sorted(timesReader, key=lambda row: row[departure_x])
+    sortedLines = sorted(timesReader, key=lambda row: int(row[departure_x].replace(':','')))
     for row in sortedLines:
       trip_num = trips[row[trip_id_x]]
       if (len(trip_num) > 4):
